@@ -1,7 +1,7 @@
 #define isDown(a) input->buttons[a].isDown
 #define ifPressed(a) input->buttons[a].isDown && input->buttons[a].changed
 #define ifReleased(a) (!input->buttons[a].isDown && input->buttons[a].changed)
-
+/*
 globalVariable vec2 playerPos = { 0.f, 0.f };
 
 vec2 startPos{50, 50};
@@ -26,3 +26,4 @@ internal void simulate(Input* input, long double deltaTime, unsigned int vkCode)
 	//DrawRect(playerPos.x, playerPos.y, 5, 5, 0xFF0000FF);
 }
 
+*/

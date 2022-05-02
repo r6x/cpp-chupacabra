@@ -1,29 +1,15 @@
 #include <Windows.h>
-//#include "userTypes.h"
-#include "utils.cpp"
-#include "font.cpp"
-#include "sqlite3.h"
 #include "InputSymbolStorage.h"
+#include "Renderer.h"
+
 globalVariable bool running = true;
+
+globalVariable RenderState renderState;
 
 #define processButton(a,b) 	case b:\
 input.buttons[a].changed = isDown != input.buttons[a].isDown;\
 input.buttons[a].isDown = isDown;\
 break;
-
-struct RenderState {
-	int width;
-	int height;
-	void* frameBuf;
-	BITMAPINFO bitmapinfo;
-};
-
-globalVariable RenderState renderState;
-
-#include "Renderer.cpp"
-#include "platform_common.cpp"
-#include "game.cpp"
-
 
 LRESULT CALLBACK WindowCallback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	LRESULT result = 0;
@@ -59,7 +45,7 @@ LRESULT CALLBACK WindowCallback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	return result;
 }
 
-inputSymbolStorage s;
+
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 	WNDCLASS windowClass = {};
@@ -68,13 +54,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	windowClass.lpfnWndProc = WindowCallback;
 
 	RegisterClass(&windowClass);
-	
+	inputSymbolStorage symbolStorage(&renderState);
 	
 	HWND window = CreateWindow(windowClass.lpszClassName, L"My first window", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 1280, 720, 0 , 0, hInstance, 0);
 
 	HDC hdc = GetDC(window);
-
-	Input input = {};
 	vec2 d = {150, 150};
 	long double deltaTime = 0.016666f;
 
@@ -94,9 +78,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		MSG message;
 		
 		bool isDown = false;
-		for (int i = 0; i < BUTTON_COUNT; i++) {
-			input.buttons[i].changed = false;
-		}
 
 		while (PeekMessage(&message, window, 0, 0, PM_REMOVE)) {
 
@@ -106,8 +87,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			case WM_KEYDOWN:
 				vkCode = (unsigned int)message.wParam;
 				isDown = ((message.lParam & (1<<31)) == 0);
-				s.Set(vkCode);
-				switch (vkCode)
+				symbolStorage.Set(vkCode, isDown);
+				/*switch (vkCode)
 				{
 				
 					processButton(BUTTON_UP, VK_UP);
@@ -116,8 +97,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 					processButton(BUTTON_RIGHT, VK_RIGHT);
 				default:
 					break;
-				}
-				break;
+				}*/
+				//break;
 			default:
 				TranslateMessage(&message);
 				DispatchMessage(&message);
@@ -126,10 +107,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			
 		}
 		//simulate
-		simulate(&input, deltaTime, vkCode);
+		//simulate(&input, deltaTime, vkCode);
 		//render
+		FillScreen(0x00000000, renderState);
+		PrintString({50,50}, symbolStorage.GetState().c_str(), 0x00FFFFFF,font32, renderState);
 		StretchDIBits(hdc, 0 ,0, renderState.width, renderState.height, 0, 0, renderState.width, renderState.height, renderState.frameBuf, &renderState.bitmapinfo, DIB_RGB_COLORS, SRCCOPY);
-	
+		//PrintChar({50,50}, 'A', 0x00FFFFFF, font32, renderState);
 		LARGE_INTEGER frameEndTime;
 		QueryPerformanceCounter(&frameEndTime);
 		deltaTime = (long double)(frameEndTime.QuadPart - frameBeginTime.QuadPart) / performanceFrequency;

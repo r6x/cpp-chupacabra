@@ -1,19 +1,9 @@
-
-#define globalVariable static
-#define internal static
-
-globalVariable int sizeOfPixel = 32;
-
+#include "utils.h"
 inline int Clamp(int min, int val, int max) {
 	if (val < min) return min;
 	if (val > max)return max;
 	return val;
 }
-
-struct vec2 {
-	float x;
-	float y;
-};
 
 char* LoadFile(const char* path) {
 	HANDLE file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);

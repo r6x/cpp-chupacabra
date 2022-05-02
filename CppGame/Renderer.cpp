@@ -1,54 +1,59 @@
-void RenderBackground() {
-	unsigned int* pixel = (unsigned int*)renderState.frameBuf;
-	for (int i = 0; i < renderState.width; i++) {
-		for (int j = 0; j < renderState.height; j++) {
+#include "Renderer.h"
+
+void RenderBackground(RenderState rs) {
+	unsigned int* pixel = (unsigned int*)rs.frameBuf;
+	for (int i = 0; i < rs.width; i++) {
+		for (int j = 0; j < rs.height; j++) {
 			*pixel++ = j*i;
 		}
 	}
 }
 
-internal void DrawPixel(vec2 pos, unsigned int color) {
-	unsigned int* frameBuf = (unsigned int*)renderState.frameBuf;
+internal void DrawPixel(vec2 pos, unsigned int color, RenderState rs) {
+	unsigned int* frameBuf = (unsigned int*)rs.frameBuf;
 	int y = pos.y;
 	int x = pos.x;
-	frameBuf[y * renderState.width + x] = color;
+	if (pos.x < 0 || pos.x > rs.width || pos.y < 0 || pos.y > rs.height) {
+		return;
+	}
+	frameBuf[y * rs.width + x] = color;
 }
 
-internal void FillScreen(unsigned int Color) {
-	unsigned int* frameBuf = (unsigned int*)renderState.frameBuf;
-	for (int x = 0; x < renderState.width; x++) {
-		for (int y = 0; y < renderState.height; y++) {
+ void FillScreen(unsigned int Color, RenderState rs) {
+	unsigned int* frameBuf = (unsigned int*)rs.frameBuf;
+	for (int x = 0; x < rs.width; x++) {
+		for (int y = 0; y < rs.height; y++) {
 			*frameBuf++ = Color;
 		}
 	}
 }
 
-internal void DrawRectInPixels(int startX, int startY, int sizeX, int sizeY, unsigned int color) {
-	unsigned int* buf = (unsigned int*)renderState.frameBuf;
+internal void DrawRectInPixels(int startX, int startY, int sizeX, int sizeY, unsigned int color, RenderState rs) {
+	unsigned int* buf = (unsigned int*)rs.frameBuf;
 	
-	startX = Clamp(0, startX, renderState.width);
-	startY = Clamp(0, startY, renderState.height);
-	sizeX = Clamp(0, sizeX, renderState.width - startX);
-	sizeY = Clamp(0, sizeY, renderState.height - startY);
+	startX = Clamp(0, startX, rs.width);
+	startY = Clamp(0, startY, rs.height);
+	sizeX = Clamp(0, sizeX, rs.width - startX);
+	sizeY = Clamp(0, sizeY, rs.height - startY);
 	for (int y = 0; y < sizeY; ++y) {
 		for (int x = 0; x < sizeX; ++x) {
-			buf[(startY + y) * renderState.width + startX + x] = color;
+			buf[(startY + y) * rs.width + startX + x] = color;
 		}
 	}
 }
 
 globalVariable float renderScale = 0.01f;
 
-internal void DrawRect(float x, float y, float width, float height, unsigned int color) {
+internal void DrawRect(float x, float y, float width, float height, unsigned int color, RenderState rs) {
 
-	x *= renderState.height * renderScale;
-	y *= renderState.height * renderScale;
+	x *= rs.height * renderScale;
+	y *= rs.height * renderScale;
 
-	width *= renderState.height * renderScale;
-	height *= renderState.height * renderScale;
+	width *= rs.height * renderScale;
+	height *= rs.height * renderScale;
 
-	x += renderState.width / 2.f;
-	y += renderState.height / 2.f;
+	x += rs.width / 2.f;
+	y += rs.height / 2.f;
 
 	int xPix = x - width / 2;
 	int yPix = y - height / 2;
@@ -56,11 +61,10 @@ internal void DrawRect(float x, float y, float width, float height, unsigned int
 	int widthPix = x + width;
 	int heightPix = y + height;
 
-	DrawRectInPixels(xPix, yPix, width, height, color);
+	DrawRectInPixels(xPix, yPix, width, height, color, rs);
 }
 
-int PrintChar(vec2 pos, const char in, unsigned int color, font fontSize) {
-	unsigned int* frame = (unsigned int*)renderState.frameBuf;
+int PrintChar(vec2 pos, const char in, unsigned int color, font fontSize, RenderState rs) {
 
 	int bytesPerSymbol = (fontSize.height * fontSize.width) / 8 + 1;
 
@@ -75,7 +79,7 @@ int PrintChar(vec2 pos, const char in, unsigned int color, font fontSize) {
 				temp = fontSize.font[symbol * bytesPerSymbol + 1 + count / 8];
 			}
 			if ((temp & 1) == 1) {
-				DrawPixel(p, color);
+				DrawPixel(p, color, rs);
 			}
 			temp = temp >> 1;
 			count++;
@@ -88,11 +92,22 @@ int PrintChar(vec2 pos, const char in, unsigned int color, font fontSize) {
 	return fontSize.font[symbol * bytesPerSymbol];
 }
 
-void PrintString(vec2 pos, const char* in, unsigned int color, font fontSize) {
+int PrintAlternateChar(vec2 pos, const char in, unsigned int color, font fontSize, RenderState rs) {
+	char d;
+	switch (in)
+	{
+		case BUTTON_ONE:
+		d = '!';
+		break;
+	}
+	return 0;
+}
+
+void PrintString(vec2 pos, const char* in, unsigned int color, font fontSize, RenderState rs) {
 	int count = CountSize(in);
 	int temp = 0;
 	for (int i = 0; i < count; i++) {
-		temp = PrintChar(pos, *in, color, fontSize);
+		temp = PrintChar(pos, *in, color, fontSize, rs);
 		pos.x += temp;
 		in++;
 	}
